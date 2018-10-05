@@ -13,4 +13,5 @@ object Constants {
     //const val testIP = "10.0.2.2"
     const val testPort = 61673
     const val pingString = ":PING:"
+    const val connectionTimeoutAfterMilliseconds = 3000
 }

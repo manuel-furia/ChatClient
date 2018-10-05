@@ -60,6 +60,7 @@ class MessageAdapter(private val context: Context, private val userName: String)
 
     }
 
+    /*
     fun getView(p0: Int, p1: View?, p2: ViewGroup?): View {
         val view = p1 ?: {
             val inflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
@@ -83,7 +84,7 @@ class MessageAdapter(private val context: Context, private val userName: String)
         textUser.text = messages[p0].user
 
         return view
-    }
+    }*/
 
     override fun getItemCount(): Int = messages.size
 

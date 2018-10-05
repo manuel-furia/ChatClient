@@ -21,6 +21,7 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
 
 
     private var observable: Observable<MessageFrom>? = null
+    private var connectionHandler: ConnectionHandler? = null
     private var observers: MutableSet<Observer<MessageTo>> = mutableSetOf()
 
     private var username = "manuel"
@@ -30,7 +31,7 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
 
     private var lastPingReceivedTimestamp = 0L
 
-
+/*
     /** Defines callbacks for service binding, passed to bindService()  */
     private val serviceConnection = object : ServiceConnection {
 
@@ -47,7 +48,7 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
             unregisterObserver(observable as Observer<MessageTo>)
         }
     }
-
+*/
     override fun notifyObservers(event: MessageTo) {
         observers.forEach {it.update(event)}
     }
@@ -73,10 +74,9 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
         setSupportActionBar(chatToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
+        //val bindServerHandlerIntent = Intent(this, ServerHandler::class.java)
 
-        val bindServerHandlerIntent = Intent(this, ServerHandler::class.java)
-
-        bindService(bindServerHandlerIntent, serviceConnection, 0)
+        //bindService(bindServerHandlerIntent, serviceConnection, 0)
 
         messagesView.layoutManager = LinearLayoutManager(this.baseContext)
 
@@ -102,6 +102,15 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
             sendMessage(":leave")
         }
 
+        observable = MainActivityState.messageFromObservable
+        observable?.registerObserver(this)
+
+        val observer: Observer<MessageTo>? = MainActivityState.messageToObserver
+        if (observer != null) observers.add(observer)
+
+        connectionHandler = MainActivityState.connectionHandler
+        connectionHandler?.createConnection(Constants.testIP, Constants.testPort)
+
         //Check the connection every second
         Future {
             while (!this.isDestroyed) {
@@ -110,6 +119,7 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
             }
 
         }
+
 
     }
 
@@ -144,7 +154,11 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
 
     override fun onDestroy() {
         super.onDestroy()
-        unbindService(serviceConnection)
+        //unbindService(serviceConnection)
+        val observer = MainActivityState.messageToObserver
+        if (observer != null) {
+            unregisterObserver(observer)
+        }
     }
 
     private fun checkConnection(){
