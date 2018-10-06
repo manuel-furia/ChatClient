@@ -4,12 +4,10 @@ import android.app.Service
 import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
-import android.os.Parcel
 import android.util.Log
 import java.io.PrintStream
 import java.net.Socket
 import java.util.*
-import java.util.concurrent.FutureTask
 import kotlin.concurrent.thread
 
 /**
@@ -19,10 +17,29 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
 
     private data class ConnectionParameters(val address: String, val port: Int)
     private data class Connection(val socket: Socket, val reader: Scanner, val writer: PrintStream,
-                                  val receivingThread: Thread, val pingThread: Thread, val lastPinged: Long)
+                                  val receivingThread: Thread, val pingThread: Thread)
+    private data class ConnectionStatus(val lastPinged: Long){
+        val connected: Boolean
+        get() {
+            val now = System.currentTimeMillis()
+            val difference = now - lastPinged
+            return    difference < Constants.connectionTimeoutAfterMilliseconds
+        }
+    }
+    private data class ConnectionInfo(val connection: Future<Connection?>, val status: ConnectionStatus){
+        val connected: Boolean
+        get() {
+            val socketOpen = connection?.result?.socket?.isConnected
+            if (socketOpen != null) {
+                return status.connected
+            } else {
+                return false
+            }
+        }
+    }
 
     private val binder = LocalBinder()
-    private val connections = mutableMapOf<ConnectionParameters, Future<Connection?>>()
+    private val connections = mutableMapOf<ConnectionParameters, ConnectionInfo>()
     private val observers: MutableSet<Observer<MessageFrom>> = mutableSetOf()
 
     inner class LocalBinder : Binder() {
@@ -33,7 +50,7 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
     override fun update(event: MessageTo) {
         thread {
             val parameters = ConnectionParameters(event.host, event.port)
-            val connection = connections.get(parameters)
+            val connection = connections[parameters]?.connection
 
             if (connection != null){
                 if (connection.ready)
@@ -60,6 +77,7 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val mode = Service.START_STICKY
+
         /*if (intent == null) return mode
         val address: String = intent.getStringExtra(Constants.addressExtraName) ?: ""
         val port: Int = intent.getIntExtra(Constants.portExtraName, 0)
@@ -129,6 +147,18 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
         super.onCreate()
     }
 
+    private fun pingReceived(host: String, port: Int){
+        val connectionParameters = ConnectionParameters(host, port)
+        val oldConnection = connections[connectionParameters]
+        val newConnection = oldConnection?.copy(status = ConnectionStatus(System.currentTimeMillis()))
+
+        if (newConnection != null){
+            synchronized(this) {
+                connections[connectionParameters] = newConnection
+            }
+        }
+    }
+
     override fun createConnection(address: String, port: Int): Boolean{
         if (address == "" || port == 0) return false
         val connectionParameters = ConnectionParameters(address, port)
@@ -153,7 +183,7 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
                                 val message = parseIncomingMessage(address, port, messageText)
 
                                 if (message is MessageFrom.PingFromServer){
-
+                                    pingReceived(address, port)
                                 }
 
                                 if (message != null) {
@@ -175,7 +205,7 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
                         receivingThread.start()
                         pingThread.start()
 
-                        Connection(socket, reader, writer, receivingThread, pingThread, 0L)
+                        Connection(socket, reader, writer, receivingThread, pingThread)
 
                     } else null
                 } else null
@@ -185,41 +215,34 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
                 null
             }
         }
-        connections[connectionParameters] = connectionTask
+
+        synchronized(this) {
+            connections[connectionParameters] = ConnectionInfo(connectionTask, ConnectionStatus(0))
+        }
 
         return true
     }
 
     override fun getConnectedServers(): Set<ServerInfo>{
-        val readyConnections = connections.filter { it.value.ready }
-        val activeConnections = readyConnections
-                .filter {
-                    val connection = it.value.result
-                    if (connection != null) {
-                        val socketOpen = connection.socket?.isConnected
-                        val lastPinged = connection.lastPinged
-                        val now = System.currentTimeMillis()
-
-                        if (socketOpen != null && lastPinged != null) {
-                            val difference = now - lastPinged
-                            difference < Constants.connectionTimeoutAfterMilliseconds
-                        } else {
-                            false
-                        }
-                    } else false
-                }
-
+        val readyConnections = connections.filter { it.value.connection.ready }
+        val activeConnections = readyConnections.filter {it.value.connected}
         val activeServers = activeConnections.map {
             ServerInfo(it.key.address, it.key.port, true)
         }
-
         return activeServers.toSet()
+    }
 
+    override fun isConnected(server: ServerInfo): Boolean {
+        val connectionParameters = ConnectionParameters(server.host, server.port)
+        val maybeConnection = connections[connectionParameters]
+
+        return maybeConnection?.connected ?: false
     }
 
     override fun dropConnection(address: String, port: Int): Unit{
         val connectionParameters = ConnectionParameters(address, port)
-        connections[connectionParameters]?.result?.socket?.close()
+        connections[connectionParameters]?.connection?.result?.socket?.close()
+        connections.remove(connectionParameters)
     }
 
     private fun parseField(text: String, prefix: String, nextPrefix: String): Pair<String, String>{

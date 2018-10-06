@@ -11,10 +11,10 @@ object MainActivityState {
     private val userList: MutableList<UserInfo> = mutableListOf()
     private var serverHandler: ServerHandler? = null
 
-    var selectedServerIndex: Int? = 0
+    var selectedServerIndex: Int? = null
         set(value) = if (serverList.indices.contains(value)) field = value else field = null
 
-    var selectedRoomIndex: Int? = 0
+    var selectedRoomIndex: Int? = null
         set(value) = if (roomList.indices.contains(value)) field = value else field = null
 
     val servers: List<ServerInfo>
@@ -26,37 +26,62 @@ object MainActivityState {
     val users: List<UserInfo>
         get() = userList
 
+
     var selectedServer: ServerInfo?
     get() = serverList.getOrNull(selectedServerIndex ?: -1)
-    set(server: ServerInfo?){
+    @Synchronized set(server: ServerInfo?){
         val index = serverList.indexOfFirst { it == server }
         selectedServerIndex = if (index >= 0) index else null
     }
 
     var selectedRoom: RoomInfo?
         get() = roomList.getOrNull(selectedRoomIndex ?: -1)
-        set(room: RoomInfo?){
+    @Synchronized set(room: RoomInfo?){
             val index = roomList.indexOfFirst { it == room }
             selectedRoomIndex = if (index >= 0) index else null
         }
 
+    @Synchronized
+    fun updateConnectionStatus(){
+        for (i in serverList.indices) {
+            val server = serverList[i]
+            serverList[i] = ServerInfo(server.host, server.port, serverHandler?.isConnected(server) ?: false)
+        }
+    }
+
+    @Synchronized
     fun addServer(server: ServerInfo){
         if (!serverList.contains(server))
             serverList.add(server)
     }
 
+    @Synchronized
     fun removeServer(server: ServerInfo){
-        if (serverList.contains(server)) serverList.remove(server)
+
+        if (serverList.contains(server)){
+            if (selectedServerIndex == serverList.indexOf(server)){
+                selectedServerIndex = null
+            }
+            serverList.remove(server)
+        }
     }
 
+    @Synchronized
     fun removeServerAt(index: Int){
-        if (serverList.indices.contains(index)) serverList.removeAt(index)
+        if (serverList.indices.contains(index)) {
+            if (index == selectedServerIndex){
+                selectedServerIndex = null
+            }
+            serverList.removeAt(index)
+        }
     }
 
+    @Synchronized
     fun dropServerHandler(){
         serverHandler = null
     }
 
+    @Synchronized
     fun setServerHandler(service: ServerHandler){
         serverHandler = service
     }

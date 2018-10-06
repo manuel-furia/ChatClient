@@ -17,6 +17,8 @@ import kotlinx.android.synthetic.main.activity_chat.*
 import kotlinx.android.synthetic.main.fragment_server.*
 import kotlinx.android.synthetic.main.message_element.*
 
+import com.example.manuel.chatclient.Utils.futureUITask
+
 class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<MessageTo> {
 
 
@@ -171,10 +173,5 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
         }
     }
 
-    fun<T> futureUITask(code: () -> T){
-        val handler = Handler(Looper.getMainLooper())
-        handler.post {
-            code.invoke()
-        }
-    }
+
 }

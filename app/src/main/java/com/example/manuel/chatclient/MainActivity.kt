@@ -73,8 +73,8 @@ class MainActivity : AppCompatActivity(){
         val bindServerHandlerIntent = Intent(this, ServerHandler::class.java)
         bindService(bindServerHandlerIntent, serviceConnection, 0)
 
-        val startChatAdapterIntent = Intent(this, ChatActivity::class.java)
-        startActivity(startChatAdapterIntent)
+        //val startChatAdapterIntent = Intent(this, ChatActivity::class.java)
+        //startActivity(startChatAdapterIntent)
     }
 
 
