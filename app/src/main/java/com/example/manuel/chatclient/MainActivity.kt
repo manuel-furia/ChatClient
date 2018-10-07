@@ -38,10 +38,10 @@ class MainActivity : AppCompatActivity(){
         //Create the fragments for the main activity
         val fragmentServer = ServerFragment()
         val fragmentRoom = RoomFragment()
-        val fragmentUser = UserFragment()
+        //val fragmentUser = UserFragment()
 
         val fragmentPagerAdapter = MainFragmentPagerAdapter(
-                listOf(fragmentServer, fragmentRoom, fragmentUser),
+                listOf(fragmentServer, fragmentRoom),
                 supportFragmentManager
         )
 
@@ -54,7 +54,6 @@ class MainActivity : AppCompatActivity(){
                 mainBottomNavigation.selectedItemId = when (position) {
                     0 -> R.id.navigation_servers
                     1 -> R.id.navigation_rooms
-                    2 -> R.id.navigation_users
                     else -> R.id.navigation_servers
                 }
             }
@@ -64,7 +63,6 @@ class MainActivity : AppCompatActivity(){
             when (it.itemId){
                 R.id.navigation_servers -> mainViewPager.currentItem = 0
                 R.id.navigation_rooms -> mainViewPager.currentItem = 1
-                R.id.navigation_users -> mainViewPager.currentItem = 2
             }
 
             true

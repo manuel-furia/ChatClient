@@ -227,7 +227,7 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
         val readyConnections = connections.filter { it.value.connection.ready }
         val activeConnections = readyConnections.filter {it.value.connected}
         val activeServers = activeConnections.map {
-            ServerInfo(it.key.address, it.key.port, true)
+            ServerInfo(it.key.address, it.key.port)
         }
         return activeServers.toSet()
     }
@@ -267,6 +267,9 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
             } else {
                 return MessageFrom.TextMessageFromServer(host, port, "", "", System.currentTimeMillis(), trimmed, serviceMessage = true)
             }
+        } else if (msg.startsWith(Constants.serviceParsableMessagePrefix)){
+            val trimmed = msg.drop(Constants.serviceParsableMessagePrefix.length).trimStart()
+            return MessageFrom.ParsableInfoFromServer(host, port, trimmed)
         } else if (msg.startsWith(Constants.roomPrefix)){
 
             val (room, msgWithoutRoom) = parseField(msg, Constants.roomPrefix, Constants.timestampPrefix)
@@ -281,7 +284,6 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
         return null
 
     }
-
 
 
 }

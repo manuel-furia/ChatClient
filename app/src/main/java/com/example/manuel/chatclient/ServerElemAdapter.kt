@@ -15,7 +15,7 @@ import java.util.*
 
 class ServerElemAdapter(private val context: Context) : RecyclerView.Adapter<ServerElemAdapter.ViewHolder>(){
 
-    var servers: MutableList<ServerInfo> = mutableListOf()
+    private var servers: MutableList<ServerInfo> = mutableListOf()
 
     class ViewHolder(val view: View): RecyclerView.ViewHolder(view)
 
@@ -25,7 +25,8 @@ class ServerElemAdapter(private val context: Context) : RecyclerView.Adapter<Ser
     }
 
     override fun getItemViewType(position: Int): Int {
-        if (servers[position].connected){
+        val connected = MainActivityState.connectionHandler?.isConnected(servers[position])
+        if (connected == true){
             return ElementType.CONNECTED.ordinal
         } else
             return ElementType.DISCONNECTED.ordinal
@@ -46,14 +47,24 @@ class ServerElemAdapter(private val context: Context) : RecyclerView.Adapter<Ser
         val buttonServerElemConnect = view.findViewById<ImageButton>(R.id.buttonServerElemConnect)
         val buttonServerElemRemove = view.findViewById<ImageButton>(R.id.buttonServerElemRemove)
         val imageServerElemStatus = view.findViewById<ImageView>(R.id.imageServerElemStatus)
-
+        val clickableAreaServerElemStatus = view.findViewById<LinearLayout>(R.id.clickableAreaServerElemStatus)
 
         val server = servers[position]
         val serverName = "${server.host}:${server.port}"
 
+        val selectServer = View.OnClickListener {
+            MainActivityState.selectedServer = server
+            MainActivityState.messageToObserver?.update(MessageTo(
+                    server.host,
+                    server.port,
+                    Constants.mainServerRoom,
+                    ":user ${MainActivityState.username}"))
+
+        }
+
         textServerAddr.text = serverName
 
-        if (server.connected){
+        if (MainActivityState.connectionHandler?.isConnected(server) == true){
             val color = ContextCompat.getColor(this.context, R.color.colorConnected)
             imageServerElemStatus?.imageTintList = ColorStateList.valueOf(color)
             buttonServerElemConnect.setImageResource(R.drawable.ic_clear_black_24dp)
@@ -65,33 +76,28 @@ class ServerElemAdapter(private val context: Context) : RecyclerView.Adapter<Ser
             imageServerElemStatus?.imageTintList = ColorStateList.valueOf(color)
             buttonServerElemConnect.setImageResource(R.drawable.ic_play_circle_outline_black_24dp)
             buttonServerElemConnect.setOnClickListener {
-                MainActivityState.connectionHandler?.dropConnection(server.host, server.port)
-            }
-            if (server == MainActivityState.selectedServer)
-                MainActivityState.selectedServer = null
-        }
-
-        buttonServerElemConnect.setOnClickListener {
-            if (server.connected){
-                MainActivityState.connectionHandler?.dropConnection(server.host, server.port)
-            } else {
                 MainActivityState.connectionHandler?.createConnection(server.host, server.port)
+                if (MainActivityState.selectedServer == null){
+                    MainActivityState.selectedServer = server
+                }
             }
+            //if (server == MainActivityState.selectedServer)
+            //MainActivityState.selectedServer = null
         }
 
         buttonServerElemRemove.setOnClickListener {
+            MainActivityState.messageToObserver?.update(MessageTo(server.host, server.port, Constants.mainServerRoom, ":quit"))
             MainActivityState.connectionHandler?.dropConnection(server.host, server.port)
             MainActivityState.removeServer(server)
         }
 
-        textServerAddr?.setOnClickListener{
-            if (server.connected)
-                MainActivityState.selectedServer = server
-        }
+        textServerAddr?.setOnClickListener (selectServer)
 
-        if (server == MainActivityState.selectedServer && server.connected){
-            val color = ContextCompat.getColor(this.context, R.color.colorConnected)
-            imageServerElemStatus?.imageTintList = ColorStateList.valueOf(color)
+        clickableAreaServerElemStatus?.setOnClickListener (selectServer)
+
+        if (server == MainActivityState.selectedServer){
+            //val color = ContextCompat.getColor(this.context, R.color.colorConnected)
+            //imageServerElemStatus?.imageTintList = ColorStateList.valueOf(color)
             imageServerElemStatus.setImageResource(R.drawable.ic_check_black_24dp)
         } else {
             imageServerElemStatus.setImageResource(R.drawable.ic_lens_black_12dp)

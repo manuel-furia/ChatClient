@@ -1,5 +1,6 @@
 package com.example.manuel.chatclient
 
+import android.app.AlertDialog
 import android.support.v4.app.Fragment
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
@@ -15,11 +16,11 @@ import kotlinx.android.synthetic.main.fragment_server.*
 import org.w3c.dom.Text
 
 import com.example.manuel.chatclient.Utils.futureUITask
+import kotlinx.android.synthetic.main.user_element.*
 
 class ServerFragment: Fragment(){
 
     var serversAdapter: ServerElemAdapter? = null
-    var connectionHandler: ConnectionHandler? = null
     var running = false
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -35,20 +36,28 @@ class ServerFragment: Fragment(){
         val editServerPort: EditText? = view?.findViewById(R.id.editPort)
         val editUsername: EditText? = view?.findViewById(R.id.editUserName)
 
-        connectionHandler?.getConnectedServers()
-
         buttonAddServer?.setOnClickListener {
             val host = editServerName?.text?.toString()
             val port = editServerPort?.text?.toString()?.toIntOrNull()
 
             if (host != null && port != null && host != "" && port != 0){
-                MainActivityState.addServer(ServerInfo(host, port, false))
+                MainActivityState.addServer(ServerInfo(host, port))
+                if (MainActivityState.servers.size == 1){
+                    MainActivityState.selectedServer = MainActivityState.servers[0]
+                }
             }
 
             updateRecyclerView(MainActivityState.servers)
         }
 
         buttonSetUsername?.setOnClickListener {
+            val userName = editUserName.text.toString()
+            if (userName != ""){
+                MainActivityState.username = userName
+                MainActivityState.connectionHandler?.getConnectedServers()?.forEach {
+                    MainActivityState.messageToObserver?.update(MessageTo(it.host, it.port, Constants.mainServerRoom,":user $userName"))
+                }
+            }
 
         }
 
@@ -59,7 +68,6 @@ class ServerFragment: Fragment(){
 
         Future {
             while (running){
-                MainActivityState.updateConnectionStatus()
                 futureUITask { serversAdapter?.update(MainActivityState.servers) }
                 Thread.sleep(1000)
             }

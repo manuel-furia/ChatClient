@@ -13,10 +13,6 @@
         android:icon="@mipmap/ic_launcher"
         android:title="Rooms"/>
 
-    <item
-        android:id="@+id/navigation_users"
-        android:icon="@mipmap/ic_launcher"
-        android:title="Users"/>
 
 
 </menu>

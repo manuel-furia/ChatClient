@@ -5,6 +5,7 @@ object Constants {
     const val addressExtraName = "address"
     const val portExtraName = "port"
     const val serviceMessagePrefix = ":-"
+    const val serviceParsableMessagePrefix = ":="
     const val roomPrefix = "@"
     const val timestampPrefix = "$"
     const val usernamePrefix = "+"
@@ -14,4 +15,5 @@ object Constants {
     const val testPort = 61673
     const val pingString = ":PING:"
     const val connectionTimeoutAfterMilliseconds = 3000
+    const val mainServerRoom = "hall"
 }
