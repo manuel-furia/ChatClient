@@ -1,10 +1,10 @@
 package com.example.manuel.chatclient
 
 import android.app.AlertDialog
+import android.content.Intent
 import android.support.v4.app.Fragment
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -24,7 +24,7 @@ class RoomFragment: Fragment(), Observer<MessageFrom> {
 
             if (server == null) {
                 rooms.clear()
-                update()
+                updateRoomList()
                 return
             }
 
@@ -51,9 +51,26 @@ class RoomFragment: Fragment(), Observer<MessageFrom> {
 
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         //recyclerRooms = view?.findViewById<RecyclerView>(R.id.recyclerRooms)
-        roomsAdapter = RoomElemAdapter(this.context) {
+        roomsAdapter = RoomElemAdapter(this) {
             val server = MainActivityState.selectedServer
             fetchRoomsFromServer(server)
+        }
+
+        buttonAddRoom.setOnClickListener {
+            val server = MainActivityState.selectedServer
+            val newRoomName = editNewRoomName?.text?.toString()
+            val username = MainActivityState.username
+            if (server != null && newRoomName != null && username != null && newRoomName != "") {
+                destination?.update(MessageTo(server.host, server.port, Constants.mainServerRoom, ":user $username"))
+                destination?.update(MessageTo(server.host, server.port, Constants.mainServerRoom, ":room $newRoomName"))
+                fetchRoomsFromServer(server)
+            }
+            if (username == null){
+                AlertDialog.Builder(context)
+                        .setTitle("Error")
+                        .setMessage("Set your username first.")
+                        .show()
+            }
         }
 
     }
@@ -67,7 +84,13 @@ class RoomFragment: Fragment(), Observer<MessageFrom> {
         destination = null
         source = null
 
-        update()
+        updateRoomList()
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == Constants.activityResultLeftRoom){
+            fetchRoomsFromServer(MainActivityState.selectedServer)
+        }
     }
 
     override fun update(event: MessageFrom) {
@@ -105,13 +128,13 @@ class RoomFragment: Fragment(), Observer<MessageFrom> {
             val isJoined = text.startsWith('*')
             rooms.add(RoomInfo(room, isJoined))
             Utils.futureUITask {
-                update()
+                updateRoomList()
             }
         }
     }
 
 
-    private fun update(){
+    private fun updateRoomList(){
         rooms.sortBy { it.name }
         roomsAdapter?.update(rooms)
         recyclerRooms?.adapter = roomsAdapter

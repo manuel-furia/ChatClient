@@ -26,10 +26,9 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
     private var connectionHandler: ConnectionHandler? = null
     private var observers: MutableSet<Observer<MessageTo>> = mutableSetOf()
 
-    private var username = "manuel"
-    private var host = Constants.testIP
-    private var room = "hall"
-    private var port = Constants.testPort
+    private var host: String? = null
+    private var room: String? = null
+    private var port: Int? = null
 
     private var lastPingReceivedTimestamp = 0L
 
@@ -65,8 +64,23 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
     private val messages: MutableList<MessageFrom.TextMessageFromServer> = mutableListOf()
 
     fun sendMessage(msg: String){
-        val message = MessageTo(host, port, room, msg)
-        notifyObservers(message)
+        val finalHost = host
+        val finalPort = port
+        val finalRoom = room
+        if (finalHost != null && finalPort != null && finalRoom != null) {
+            val message = MessageTo(finalHost, finalPort, finalRoom, msg)
+            notifyObservers(message)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        host = MainActivityState.selectedServer?.host
+        port = MainActivityState.selectedServer?.port
+        room = MainActivityState.selectedRoom?.name
+
+        serverNameText.text = host
+        roomNameText.text = room
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -76,14 +90,7 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
         setSupportActionBar(chatToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        //val bindServerHandlerIntent = Intent(this, ServerHandler::class.java)
-
-        //bindService(bindServerHandlerIntent, serviceConnection, 0)
-
         messagesView.layoutManager = LinearLayoutManager(this.baseContext)
-
-        serverNameText.text = host
-        roomNameText.text = room
 
         sendButton.setOnClickListener {
             val messageText = messageEditText.text.toString()
@@ -102,6 +109,7 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
 
         leaveButton.setOnClickListener{
             sendMessage(":leave")
+            this.finish()
         }
 
         observable = MainActivityState.messageFromObservable
@@ -146,7 +154,8 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
     }
 
     fun updateMessages(){
-        if (messagesView.adapter == null) {
+        val username = MainActivityState.username
+        if (messagesView.adapter == null && username != null) {
             val adapter = MessageAdapter(this.baseContext, username)
             messagesView.adapter = adapter
         }
@@ -156,7 +165,6 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
 
     override fun onDestroy() {
         super.onDestroy()
-        //unbindService(serviceConnection)
         val observer = MainActivityState.messageToObserver
         if (observer != null) {
             unregisterObserver(observer)
@@ -164,7 +172,7 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
     }
 
     private fun checkConnection(){
-        if (System.currentTimeMillis() > lastPingReceivedTimestamp + 3000){
+        if (System.currentTimeMillis() > lastPingReceivedTimestamp + Constants.connectionTimeoutAfterMilliseconds){
             val color = ContextCompat.getColor(this.baseContext, R.color.colorDisconnected)
             imageConnected?.imageTintList = ColorStateList.valueOf(color)
         } else {

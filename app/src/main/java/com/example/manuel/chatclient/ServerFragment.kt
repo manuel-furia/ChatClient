@@ -1,22 +1,17 @@
 package com.example.manuel.chatclient
 
-import android.app.AlertDialog
 import android.support.v4.app.Fragment
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
-import android.text.Html
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageButton
-import android.widget.TextView
 import kotlinx.android.synthetic.main.fragment_server.*
-import org.w3c.dom.Text
 
 import com.example.manuel.chatclient.Utils.futureUITask
-import kotlinx.android.synthetic.main.user_element.*
 
 class ServerFragment: Fragment(){
 
@@ -32,7 +27,7 @@ class ServerFragment: Fragment(){
         val recyclerServers: RecyclerView? = view?.findViewById(R.id.recyclerServers)
         val buttonAddServer: ImageButton? = view?.findViewById(R.id.buttonAddServer)
         val buttonSetUsername: ImageButton? = view?.findViewById(R.id.buttonSetUsername)
-        val editServerName: EditText? = view?.findViewById(R.id.editServerName)
+        val editServerName: EditText? = view?.findViewById(R.id.editNewRoomName)
         val editServerPort: EditText? = view?.findViewById(R.id.editPort)
         val editUsername: EditText? = view?.findViewById(R.id.editUserName)
 

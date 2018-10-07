@@ -16,4 +16,5 @@ object Constants {
     const val pingString = ":PING:"
     const val connectionTimeoutAfterMilliseconds = 3000
     const val mainServerRoom = "hall"
+    const val activityResultLeftRoom = 13
 }
