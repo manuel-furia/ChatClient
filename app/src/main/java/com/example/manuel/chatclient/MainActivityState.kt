@@ -127,4 +127,7 @@ object MainActivityState {
 
     val connectionHandler : ConnectionHandler?
         get() = serverHandler
+
+    val messageListProvider : MessageListProvider?
+        get() = serverHandler
 }

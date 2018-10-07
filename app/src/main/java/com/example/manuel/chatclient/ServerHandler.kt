@@ -13,11 +13,12 @@ import kotlin.concurrent.thread
 /**
  * Created by manuel on 9/17/18.
  */
-class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>, ConnectionHandler{
+class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>, ConnectionHandler, MessageListProvider{
 
     private data class ConnectionParameters(val address: String, val port: Int)
     private data class Connection(val socket: Socket, val reader: Scanner, val writer: PrintStream,
-                                  val receivingThread: Thread, val pingThread: Thread)
+                                  val receivingThread: Thread, val pingThread: Thread,
+                                  val receivedMessages: MutableList<MessageFrom>)
     private data class ConnectionStatus(val lastPinged: Long){
         val connected: Boolean
         get() {
@@ -78,67 +79,6 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val mode = Service.START_STICKY
 
-        /*if (intent == null) return mode
-        val address: String = intent.getStringExtra(Constants.addressExtraName) ?: ""
-        val port: Int = intent.getIntExtra(Constants.portExtraName, 0)
-        if (address == "" || port == 0) return mode
-        val connectionParameters = ConnectionParameters(address, port)
-        if (connections.containsKey(connectionParameters)) return mode
-
-
-        val connectionTask = Future<Connection?> {
-            try {
-                val socket = Socket(address, port)
-                if (!socket.isClosed) {
-                    val input = socket.getInputStream()
-                    val output = socket.getOutputStream()
-                    if (input != null && output != null) {
-                        val reader = Scanner(input)
-                        val writer = PrintStream(output)
-                        val receivingThread = Thread {
-
-                            while (!socket.isClosed) {
-                                Thread.sleep(200)
-                                if (!reader.hasNext()) continue
-                                val messageText = reader.nextLine()
-                                if (messageText == null) continue
-                                val message = parseIncomingMessage(address, port, messageText)
-
-                                if (message is MessageFrom.PingFromServer){
-
-                                }
-
-                                if (message != null) {
-                                    notifyObservers(message)
-                                }
-                            }
-
-                        }
-
-                        val pingThread = Thread {
-                            while(!socket.isClosed && socket.isConnected) {
-                                val ping = MessageFrom.PingFromServer()
-                                writer.println(Constants.pingString)
-                                Thread.sleep(1000)
-                            }
-
-                        }
-
-                        receivingThread.start()
-                        pingThread.start()
-
-                        Connection(socket, reader, writer, receivingThread, pingThread, 0L)
-
-                    } else null
-                } else null
-
-            } catch (ex: Exception){
-                Log.e("ERROR", ex.message)
-                null
-            }
-        }
-        connections[connectionParameters] = connectionTask
-*/
         return mode
 
     }
@@ -159,6 +99,17 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
         }
     }
 
+    override fun getMessages(host: String, port: Int): List<MessageFrom>? {
+        val connectionParameters = ConnectionParameters(host, port)
+        val connection = connections[connectionParameters]?.connection?.result
+
+        if (connection != null){
+            return connection.receivedMessages
+        }
+
+        return null
+    }
+
     override fun createConnection(address: String, port: Int): Boolean{
         if (address == "" || port == 0) return false
         val connectionParameters = ConnectionParameters(address, port)
@@ -170,6 +121,7 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
                 if (!socket.isClosed) {
                     val input = socket.getInputStream()
                     val output = socket.getOutputStream()
+                    val receivedMessages: MutableList<MessageFrom> = mutableListOf()
                     if (input != null && output != null) {
                         val reader = Scanner(input)
                         val writer = PrintStream(output)
@@ -188,6 +140,7 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
 
                                 if (message != null) {
                                     notifyObservers(message)
+                                    receivedMessages.add(message)
                                 }
                             }
 
@@ -205,7 +158,7 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
                         receivingThread.start()
                         pingThread.start()
 
-                        Connection(socket, reader, writer, receivingThread, pingThread)
+                        Connection(socket, reader, writer, receivingThread, pingThread, receivedMessages)
 
                     } else null
                 } else null

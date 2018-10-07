@@ -81,6 +81,8 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
 
         serverNameText.text = host
         roomNameText.text = room
+
+        fetchOldMessages()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -130,7 +132,7 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
 
         }
 
-
+        fetchOldMessages()
     }
 
     override fun update(event: MessageFrom) {
@@ -178,6 +180,19 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
         } else {
             val color = ContextCompat.getColor(this.baseContext, R.color.colorConnected)
             imageConnected?.imageTintList = ColorStateList.valueOf(color)
+        }
+    }
+
+    private fun fetchOldMessages(){
+        val finalHost = host
+        val finalPort = port
+
+        if (finalHost != null && finalPort != null) {
+            val textMessages = MainActivityState.messageListProvider?.getMessages(finalHost, finalPort) ?: listOf<MessageFrom>()
+            messages.clear()
+            textMessages.filterIsInstance<MessageFrom.TextMessageFromServer>().forEach {
+                update(it)
+            }
         }
     }
 
