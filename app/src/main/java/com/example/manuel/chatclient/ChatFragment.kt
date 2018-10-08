@@ -1,3 +1,8 @@
+/*
+Author: Manuel Furia
+Fragment that will be showing messages related to one server room, allowing
+also to send messages to that room
+*/
 package com.example.manuel.chatclient
 
 import android.os.Bundle
@@ -19,8 +24,11 @@ class ChatFragment: Fragment(),  Observer<MessageFrom>, Observable<MessageTo>  {
     private var connectionHandler: ConnectionHandler? = null
     private var observers: MutableSet<Observer<MessageTo>> = mutableSetOf()
 
+    private val messages: MutableList<MessageFrom.TextMessageFromServer> = mutableListOf()
+
     override fun setUserVisibleHint(isVisibleToUser: Boolean) {
         if (isVisibleToUser) {
+            //Fetch the old messages when the activity becomes visible to the user
             fetchOldMessages()
         }
     }
@@ -36,8 +44,10 @@ class ChatFragment: Fragment(),  Observer<MessageFrom>, Observable<MessageTo>  {
     override fun unregisterObserver(observer: Observer<MessageTo>) {
         observers.remove(observer)
     }
-    private val messages: MutableList<MessageFrom.TextMessageFromServer> = mutableListOf()
 
+    /**
+     * Send a message from this room to the observers
+     */
     fun sendMessage(msg: String){
         val host = MainActivityState.selectedServer?.host
         val port = MainActivityState.selectedServer?.port
@@ -78,6 +88,8 @@ class ChatFragment: Fragment(),  Observer<MessageFrom>, Observable<MessageTo>  {
             messageEditText.text.clear()
         }
 
+        //Autoscroll after the user click on the message EditText, so that the expanded layout
+        //will not cover the last messages
         messageEditText.setOnClickListener{
             Future {
                 Thread.sleep(200)
@@ -104,9 +116,9 @@ class ChatFragment: Fragment(),  Observer<MessageFrom>, Observable<MessageTo>  {
                 val room = MainActivityState.selectedRoom?.name
                 val correctServer = event.host == host && event.port == port
                 val correctRoom = event.room == room || event.room == ""
-                if (correctServer && correctRoom) {
+                if (correctServer && correctRoom) { //Check if the message is destined for this room
                     val handler = Handler(Looper.getMainLooper())
-
+                    //Add the message and update the UI messageView
                     handler.post {
                         messages.add(event)
                         updateMessages()
@@ -116,6 +128,9 @@ class ChatFragment: Fragment(),  Observer<MessageFrom>, Observable<MessageTo>  {
         }
     }
 
+    /**
+     * Update the messageView (RecyclerView) to contain the new messages
+     */
     fun updateMessages(){
         if (messagesView == null) return
         val username = MainActivityState.username
@@ -135,6 +150,9 @@ class ChatFragment: Fragment(),  Observer<MessageFrom>, Observable<MessageTo>  {
         }
     }
 
+    /**
+     * Fetch all the messages related to this room stored in the memory of the service that is receiving them.
+     */
     private fun fetchOldMessages(){
         val host = MainActivityState.selectedServer?.host
         val port = MainActivityState.selectedServer?.port
@@ -142,21 +160,27 @@ class ChatFragment: Fragment(),  Observer<MessageFrom>, Observable<MessageTo>  {
         val finalPort = port
 
         if (finalHost != null && finalPort != null) {
+            //Get the message from the provider, or an empty list in case of failure
             val textMessages = MainActivityState.messageListProvider?.getMessages(finalHost, finalPort) ?: listOf<MessageFrom>()
             messages.clear()
             textMessages.filterIsInstance<MessageFrom.TextMessageFromServer>().forEach {
+                //Add each relevant message to the list and update the UI, but working from this same thread
+                //(necessary to prevent conflict with the observer update() thread)
                 addMessageInSameThread(it)
             }
         }
     }
 
+    /**
+     * Add each relevant message to the list and update the UI, but working from the thread of the caller of this function
+     */
     private fun addMessageInSameThread(event: MessageFrom.TextMessageFromServer) {
         val host = MainActivityState.selectedServer?.host
         val port = MainActivityState.selectedServer?.port
         val room = MainActivityState.selectedRoom?.name
         val correctServer = event.host == host && event.port == port
         val correctRoom = event.room == room || event.room == ""
-        if (correctServer && correctRoom) {
+        if (correctServer && correctRoom) { //Check if the message is destined for this room
             messages.add(event)
             updateMessages()
         }

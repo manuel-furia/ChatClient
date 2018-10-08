@@ -1,3 +1,8 @@
+/*
+Author: Manuel Furia
+Fragment to select servers to connect to from a list and a username for all the connected servers.
+*/
+
 package com.example.manuel.chatclient
 
 import android.support.v4.app.Fragment
@@ -44,7 +49,7 @@ class ServerFragment: Fragment(){
 
             if (host != null && port != null && host != "" && port != 0){
                 MainActivityState.addServer(ServerInfo(host, port))
-                if (MainActivityState.servers.size == 1){
+                if (MainActivityState.servers.size == 1){ //Select automatically the first server added
                     MainActivityState.selectedServer = MainActivityState.servers[0]
                 }
             }
@@ -68,6 +73,7 @@ class ServerFragment: Fragment(){
 
         running = true
 
+        //Update the server list every second
         Future {
             while (running){
                 futureUITask { serversAdapter?.update(MainActivityState.servers) }

@@ -1,3 +1,8 @@
+/*
+Author: Manuel Furia
+Represents an instance that manages the connections to servers
+*/
+
 package com.example.manuel.chatclient
 
 interface ConnectionHandler {

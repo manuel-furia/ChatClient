@@ -1,7 +1,15 @@
+/*
+Author: Manuel Furia
+The state shared between the UI activities of the app
+Contains the network service (ServerHandler), the server list, the selected server, the username and the selected room
+*/
 package com.example.manuel.chatclient
 
 object MainActivityState {
 
+    /**
+     * Callback that will be called when the storable data of this state changes
+     */
     var storableStateModifiedCallback: ((List<ServerInfo>, ServerInfo?, String?) -> Unit)? = null
 
     var username: String? = null
@@ -71,7 +79,8 @@ object MainActivityState {
         serverHandler = service
     }
 
-    val boundToServerHandler: Boolean = serverHandler != null
+    //Get the server handler as different type of interface, exposing different kind of functionality
+    //This decouples the service from its users
 
     val messageFromObservable : Observable<MessageFrom>?
         get() = serverHandler

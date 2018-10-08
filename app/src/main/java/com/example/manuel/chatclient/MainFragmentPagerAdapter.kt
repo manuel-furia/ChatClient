@@ -1,3 +1,7 @@
+/*
+Author: Manuel Furia
+Adapter for fragments in Pager
+*/
 package com.example.manuel.chatclient
 
 import android.support.v4.app.Fragment

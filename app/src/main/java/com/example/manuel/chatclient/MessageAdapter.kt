@@ -1,3 +1,7 @@
+/*
+Author: Manuel Furia
+Adapter for chat messages
+*/
 package com.example.manuel.chatclient
 
 import android.content.Context
@@ -22,6 +26,9 @@ class MessageAdapter(private val context: Context, private val userName: String)
         SERVICE
     }
 
+    /**
+     * Gets the type of the message depending on who sent it
+     */
     override fun getItemViewType(position: Int): Int {
         if (messages[position].serviceMessage){
             return ElementType.SERVICE.ordinal
@@ -31,6 +38,9 @@ class MessageAdapter(private val context: Context, private val userName: String)
             return ElementType.OTHER.ordinal
     }
 
+    /**
+     * Inflate the correct view depending on the type of the message
+     */
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): ViewHolder {
         val inflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
         if (viewType == ElementType.SERVICE.ordinal)
@@ -41,6 +51,9 @@ class MessageAdapter(private val context: Context, private val userName: String)
             return ViewHolder(inflater.inflate(R.layout.message_element, parent, false) as LinearLayout)
     }
 
+    /**
+     * Setup the view parameters
+     */
     override fun onBindViewHolder(holder: ViewHolder?, position: Int) {
         val view = holder?.view ?: return
 
@@ -62,6 +75,9 @@ class MessageAdapter(private val context: Context, private val userName: String)
 
     override fun getItemCount(): Int = messages.size
 
+    /**
+     * Update the adapters' dataset by replacing its content with the messages parameters
+     */
     fun update(messages: List<MessageFrom.TextMessageFromServer>){
         this.messages.clear()
         this.messages.addAll(messages)

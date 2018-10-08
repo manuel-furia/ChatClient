@@ -1,3 +1,9 @@
+/*
+Author: Manuel Furia
+Handles the network connection to multiple servers, recording all the messages received and
+notifying observers. In addition, checks via pings if a connection is alive.
+*/
+
 package com.example.manuel.chatclient
 
 import android.app.Service
@@ -15,20 +21,25 @@ import kotlin.concurrent.thread
  */
 class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>, ConnectionHandler, MessageListProvider{
 
+    //Identifies the server
     private data class ConnectionParameters(val address: String, val port: Int)
+    //Represent the tcp connection, the thread that handle it and the data received since its beginning
     private data class Connection(val socket: Socket, val reader: Scanner, val writer: PrintStream,
                                   val receivingThread: Thread, val pingThread: Thread,
                                   val receivedMessages: MutableList<MessageFrom>)
+    //Respresent the status of a connection (when did we receive the last ping)
     private data class ConnectionStatus(val lastPinged: Long){
-        val connected: Boolean
+        val connected: Boolean //Verify if a connection is alive by checking the last ping received
         get() {
             val now = System.currentTimeMillis()
             val difference = now - lastPinged
             return    difference < Constants.connectionTimeoutAfterMilliseconds
         }
     }
+
+    //Store a connection (that might not be open yet, see Future) and its status
     private data class ConnectionInfo(val connection: Future<Connection?>, val status: ConnectionStatus){
-        val connected: Boolean
+        val connected: Boolean //Verify if connected (see above)
         get() {
             val socketOpen = connection?.result?.socket?.isConnected
             if (socketOpen != null) {
@@ -38,9 +49,10 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
             }
         }
     }
-
     private val binder = LocalBinder()
+    //Store the connections and their status using their parameters (host and port) as keys
     private val connections = mutableMapOf<ConnectionParameters, ConnectionInfo>()
+
     private val observers: MutableSet<Observer<MessageFrom>> = mutableSetOf()
 
     inner class LocalBinder : Binder() {
@@ -48,6 +60,7 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
         fun getService(): ServerHandler = this@ServerHandler
     }
 
+    //Received a message from the client to forward to the server
     override fun update(event: MessageTo) {
         thread {
             val parameters = ConnectionParameters(event.host, event.port)
@@ -87,6 +100,7 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
         super.onCreate()
     }
 
+    //Received a ping, register the current time
     private fun pingReceived(host: String, port: Int){
         val connectionParameters = ConnectionParameters(host, port)
         val oldConnection = connections[connectionParameters]
@@ -99,6 +113,7 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
         }
     }
 
+    //Get all the old messages received from a connection since it staterd
     override fun getMessages(host: String, port: Int): List<MessageFrom>? {
         val connectionParameters = ConnectionParameters(host, port)
         val connection = connections[connectionParameters]?.connection?.result
@@ -115,6 +130,7 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
         val connectionParameters = ConnectionParameters(address, port)
         if (connections.containsKey(connectionParameters)) return false
 
+        //Create the future for the connection (will return a Connection when opened)
         val connectionTask = Future<Connection?> {
             try {
                 val socket = Socket(address, port)
@@ -125,6 +141,7 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
                     if (input != null && output != null) {
                         val reader = Scanner(input)
                         val writer = PrintStream(output)
+                        //The thread that will be listening for incoming messages
                         val receivingThread = Thread {
 
                             while (!socket.isClosed) {
@@ -145,7 +162,7 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
                             }
 
                         }
-
+                        //The thread that will be regularly pinging the server
                         val pingThread = Thread {
                             while(!socket.isClosed && socket.isConnected) {
                                 val ping = MessageFrom.PingFromServer()
@@ -168,7 +185,7 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
                 null
             }
         }
-
+        //Add the future connection and its status to the connections table
         synchronized(this) {
             connections[connectionParameters] = ConnectionInfo(connectionTask, ConnectionStatus(0))
         }
@@ -176,6 +193,7 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
         return true
     }
 
+    //Get all the servers with an alive connection
     override fun getConnectedServers(): Set<ServerInfo>{
         val readyConnections = connections.filter { it.value.connection.ready }
         val activeConnections = readyConnections.filter {it.value.connected}
@@ -185,6 +203,7 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
         return activeServers.toSet()
     }
 
+    //Is the connection of this server alive?
     override fun isConnected(server: ServerInfo): Boolean {
         val connectionParameters = ConnectionParameters(server.host, server.port)
         val maybeConnection = connections[connectionParameters]
@@ -198,6 +217,7 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
         connections.remove(connectionParameters)
     }
 
+    //Parse a portion of the incoming message (from one prefix to another)
     private fun parseField(text: String, prefix: String, nextPrefix: String): Pair<String, String>{
         val prefixTrimmed = text.drop(prefix.length)
         val field = prefixTrimmed.split(nextPrefix).getOrNull(0) ?: ""
@@ -207,7 +227,7 @@ class ServerHandler() : Service(), Observable<MessageFrom>, Observer<MessageTo>,
     }
 
     private fun parseIncomingMessage(host:String, port: Int, msg: String): MessageFrom? {
-
+        //Check the type of message by its prefix, and parse it field by field
         if (msg.startsWith(Constants.pingString)) {
             return MessageFrom.PingFromServer()
         } else if (msg.startsWith(Constants.serviceMessagePrefix)){

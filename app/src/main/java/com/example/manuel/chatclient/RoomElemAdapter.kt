@@ -1,3 +1,9 @@
+/*
+Author: Manuel Furia
+Adapter for a room element in the rooms fragment
+*/
+
+
 package com.example.manuel.chatclient
 
 import android.app.AlertDialog
@@ -55,6 +61,7 @@ class RoomElemAdapter(private val fragment: Fragment, private val roomsUpdateCal
 
         val leaveRoom = View.OnClickListener {
             if (room.name != Constants.mainServerRoom) {
+                //Get a reference to the MessageTo observer and send it a leave message
                 MainActivityState.messageToObserver?.update(MessageTo(host, port, room.name, ":leave"))
                 roomsUpdateCallback.invoke()
             } else {
@@ -69,6 +76,8 @@ class RoomElemAdapter(private val fragment: Fragment, private val roomsUpdateCal
         val joinRoom = View.OnClickListener {
             if ((MainActivityState.username ?: "") != ""){
                 val username = MainActivityState.username
+                //Get a reference to the MessageTo observer and notify it of the username (it might be not set)
+                //and the intento to create or join a room
                 MainActivityState.messageToObserver?.update(MessageTo(host, port, Constants.mainServerRoom, ":user $username"))
                 MainActivityState.messageToObserver?.update(MessageTo(host, port, Constants.mainServerRoom, ":room ${room.name}"))
                 MainActivityState.selectedRoom = room
@@ -86,7 +95,7 @@ class RoomElemAdapter(private val fragment: Fragment, private val roomsUpdateCal
 
         textRoomElemName.text = room.name
 
-
+        //Show different color and enable the leave button depending on the joined status of the room
         if (room.joined){
             val color = ContextCompat.getColor(fragment.context, R.color.colorConnected)
             imageRoomElemStatus?.imageTintList = ColorStateList.valueOf(color)

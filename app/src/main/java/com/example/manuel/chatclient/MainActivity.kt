@@ -1,3 +1,7 @@
+/*
+Author: Manuel Furia
+The main activity of the app, used to select server and rooms the user wants to join
+*/
 package com.example.manuel.chatclient
 
 import android.content.ComponentName
@@ -13,9 +17,11 @@ import kotlinx.android.synthetic.main.activity_main.*
 class MainActivity : AppCompatActivity(){
 
 
-    /** Defines callbacks for service binding, passed to bindService()  */
+    //Callbacks for service binding
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
+            //Set the network service to the main state, so other activities can access/
+            //its functionalities via interfaces
             MainActivityState.setServerHandler((service as ServerHandler.LocalBinder).getService())
         }
         override fun onServiceDisconnected(arg0: ComponentName) {
@@ -28,14 +34,18 @@ class MainActivity : AppCompatActivity(){
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        //Fetch stored preferences
         val sharedPreferences = this.getSharedPreferences(Constants.preferencesFileName, Context.MODE_PRIVATE)
         val storedSelectedServer = sharedPreferences.getString(Constants.selectedServerPrefName, "")
         val storedServerList = sharedPreferences.getStringSet(Constants.serverListPrefName, setOf())
         val storedUsername = sharedPreferences.getString(Constants.usernamePrefName, "")
 
+        //This callback will be executed when one of the values that can be stored in preferences
+        //changes
         MainActivityState.storableStateModifiedCallback = { servers, selected, username ->
             val sharedPreferences = this.getSharedPreferences(Constants.preferencesFileName, Context.MODE_PRIVATE)
             val editor = sharedPreferences.edit()
+            //Tansform ServerInfo into strings
             val serversAsString = servers.map {it.host + ":" + it.port}.toSet()
             val selectedAsString = selected?.host?.plus(":")?.plus(selected.port.toString())
             editor.putStringSet(Constants.serverListPrefName, serversAsString)
@@ -44,6 +54,7 @@ class MainActivity : AppCompatActivity(){
             editor.apply()
         }
 
+        //Fetch the list of stored servers, serialized as strings
         storedServerList.forEach {
             val host = it.split(":").take(1)[0]
             val port = it.split(":").drop(1)[0].toIntOrNull()
@@ -54,6 +65,7 @@ class MainActivity : AppCompatActivity(){
             }
         }
 
+        //Fetch the stored selected server, serialized as string
         if (storedSelectedServer != ""){
             val host = storedSelectedServer.split(":").take(1)[0]
             val port = storedSelectedServer.split(":").drop(1)[0].toIntOrNull()
@@ -61,11 +73,12 @@ class MainActivity : AppCompatActivity(){
                 MainActivityState.selectedServer = ServerInfo(host, port)
         }
 
+        //Fetch the stored username
         if (storedUsername != ""){
             MainActivityState.username = storedUsername
         }
 
-
+        //Start the network service
         val startServerHandlerIntent = Intent(this, ServerHandler::class.java)
         startService(startServerHandlerIntent)
 
@@ -80,6 +93,7 @@ class MainActivity : AppCompatActivity(){
 
         mainViewPager.adapter = fragmentPagerAdapter
 
+        //Setup the interaction between pager and menu
         mainViewPager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener{
             override fun onPageScrollStateChanged(state: Int) {}
             override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
@@ -101,6 +115,7 @@ class MainActivity : AppCompatActivity(){
             true
         }
 
+        //Bind to the network service
         val bindServerHandlerIntent = Intent(this, ServerHandler::class.java)
         bindService(bindServerHandlerIntent, serviceConnection, 0)
 

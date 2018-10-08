@@ -1,3 +1,8 @@
+/*
+Author: Manuel Furia
+Inflate a server element in a RecyclerView.
+*/
+
 package com.example.manuel.chatclient
 
 import android.content.Context
@@ -64,6 +69,10 @@ class ServerElemAdapter(private val context: Context) : RecyclerView.Adapter<Ser
 
         textServerAddr.text = serverName
 
+        //Selected servers will be shown with the image of a "checked element"
+        //Connected servers will be shown in green
+        //Disconnected servers will be shown in red
+
         if (MainActivityState.connectionHandler?.isConnected(server) == true){
             val color = ContextCompat.getColor(this.context, R.color.colorConnected)
             imageServerElemStatus?.imageTintList = ColorStateList.valueOf(color)
@@ -81,8 +90,6 @@ class ServerElemAdapter(private val context: Context) : RecyclerView.Adapter<Ser
                     MainActivityState.selectedServer = server
                 }
             }
-            //if (server == MainActivityState.selectedServer)
-            //MainActivityState.selectedServer = null
         }
 
         buttonServerElemRemove.setOnClickListener {
@@ -91,13 +98,11 @@ class ServerElemAdapter(private val context: Context) : RecyclerView.Adapter<Ser
             MainActivityState.removeServer(server)
         }
 
+        //Select a server if either its name or status icon is clicked
         textServerAddr?.setOnClickListener (selectServer)
-
         clickableAreaServerElemStatus?.setOnClickListener (selectServer)
 
         if (server == MainActivityState.selectedServer){
-            //val color = ContextCompat.getColor(this.context, R.color.colorConnected)
-            //imageServerElemStatus?.imageTintList = ColorStateList.valueOf(color)
             imageServerElemStatus.setImageResource(R.drawable.ic_check_black_24dp)
         } else {
             imageServerElemStatus.setImageResource(R.drawable.ic_lens_black_12dp)

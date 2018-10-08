@@ -1,3 +1,7 @@
+/*
+Author: Manuel Furia
+Contains constants used throughout the program
+*/
 package com.example.manuel.chatclient
 
 object Constants {

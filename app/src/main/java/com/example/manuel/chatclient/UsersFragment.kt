@@ -1,3 +1,8 @@
+/*
+Author: Manuel Furia
+Fragment that shows the user list. Similar to RoomFragment.
+*/
+
 package com.example.manuel.chatclient
 
 import android.content.Intent
@@ -89,15 +94,15 @@ class UsersFragment: Fragment(), Observer<MessageFrom> {
         }
     }
 
-
+    //Parse the user list arriving message by message
     private fun parseUserInformation(text: String) {
         val data = text.trim()
-        if (data == Constants.serverParsableUsersPrefix){
+        if (data == Constants.serverParsableUsersPrefix){ //Start of the user list
             receivingUserInfo = true
             users.clear()
-        } else if (Constants.serverParsableInfoPrefixesWoUsers.contains(data)){
+        } else if (Constants.serverParsableInfoPrefixesWoUsers.contains(data)){ //End of the user list, some different data is arriving
             receivingUserInfo = false
-        } else if (receivingUserInfo){
+        } else if (receivingUserInfo){ //Element of the user list, record it
             val user = text
             users.add(UserInfo(user, false))
             Utils.futureUITask {
@@ -119,6 +124,7 @@ class UsersFragment: Fragment(), Observer<MessageFrom> {
         source = null
     }
 
+    //Ask the server for the user list
     private fun fetchUsersFromServer(server: ServerInfo?){
         destination = MainActivityState.messageToObserver
 

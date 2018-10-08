@@ -1,3 +1,8 @@
+/*
+Author: Manuel Furia
+Represent a user in a recyclerView, with a button to open a private message room.
+*/
+
 package com.example.manuel.chatclient
 
 import android.app.AlertDialog

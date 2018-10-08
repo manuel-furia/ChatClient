@@ -1,3 +1,8 @@
+/*
+Author: Manuel Furia
+Generic observable for the observer pattern
+*/
+
 package com.example.manuel.chatclient
 
 interface Observable<T> {
