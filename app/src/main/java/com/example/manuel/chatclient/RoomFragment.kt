@@ -118,10 +118,10 @@ class RoomFragment: Fragment(), Observer<MessageFrom> {
 
     private fun parseRoomInformation(text: String) {
         val data = text.trim()
-        if (data == "Rooms:"){
+        if (data == Constants.serverParsableRoomsPrefix){
             receivingRoomInfo = true
             rooms.clear()
-        } else if (data.startsWith(":")){
+        } else if (Constants.serverParsableInfoPrefixesWoRooms.contains(data)){
             receivingRoomInfo = false
         } else if (receivingRoomInfo){
             val room = text.trimStart('*')

@@ -1,21 +1,11 @@
 package com.example.manuel.chatclient
 
-import android.content.ComponentName
-import android.content.Intent
-import android.content.ServiceConnection
 import android.content.res.ColorStateList
 import android.os.Bundle
-import android.os.Handler
-import android.os.IBinder
-import android.os.Looper
 import android.support.v4.content.ContextCompat
-import android.support.v4.widget.ImageViewCompat
+import android.support.v4.view.ViewPager
 import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.LinearLayoutManager
-import android.text.Editable
 import kotlinx.android.synthetic.main.activity_chat.*
-import kotlinx.android.synthetic.main.fragment_server.*
-import kotlinx.android.synthetic.main.message_element.*
 
 import com.example.manuel.chatclient.Utils.futureUITask
 
@@ -26,30 +16,9 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
     private var connectionHandler: ConnectionHandler? = null
     private var observers: MutableSet<Observer<MessageTo>> = mutableSetOf()
 
-    private var host: String? = null
-    private var room: String? = null
-    private var port: Int? = null
-
     private var lastPingReceivedTimestamp = 0L
 
-/*
-    /** Defines callbacks for service binding, passed to bindService()  */
-    private val serviceConnection = object : ServiceConnection {
 
-        override fun onServiceConnected(className: ComponentName, service: IBinder) {
-            val server = (service as ServerHandler.LocalBinder).getService()
-            observable = server
-            observable?.registerObserver(this@ChatActivity)
-            observers.add(server)
-
-        }
-
-        override fun onServiceDisconnected(arg0: ComponentName) {
-            observable?.unregisterObserver(this@ChatActivity)
-            unregisterObserver(observable as Observer<MessageTo>)
-        }
-    }
-*/
     override fun notifyObservers(event: MessageTo) {
         observers.forEach {it.update(event)}
     }
@@ -64,25 +33,26 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
     private val messages: MutableList<MessageFrom.TextMessageFromServer> = mutableListOf()
 
     fun sendMessage(msg: String){
-        val finalHost = host
-        val finalPort = port
-        val finalRoom = room
-        if (finalHost != null && finalPort != null && finalRoom != null) {
-            val message = MessageTo(finalHost, finalPort, finalRoom, msg)
+        val host = MainActivityState.selectedServer?.host
+        val port = MainActivityState.selectedServer?.port
+        val room = MainActivityState.selectedRoom?.name
+        if (host != null && port != null && room != null) {
+            val message = MessageTo(host, port, room, msg)
             notifyObservers(message)
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        host = MainActivityState.selectedServer?.host
-        port = MainActivityState.selectedServer?.port
-        room = MainActivityState.selectedRoom?.name
-
+    fun setToolbarInfo(host: String, room: String) {
+        val username = MainActivityState.username
+        val roomText = if (!room.contains(".")) {
+            room
+        } else if (username == null) {
+            room
+        } else {
+            "Pvt: " + room.split(".").minus(username).joinToString()
+        }
         serverNameText.text = host
-        roomNameText.text = room
-
-        fetchOldMessages()
+        roomNameText.text = roomText
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -92,22 +62,39 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
         setSupportActionBar(chatToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        messagesView.layoutManager = LinearLayoutManager(this.baseContext)
 
-        sendButton.setOnClickListener {
-            val messageText = messageEditText.text.toString()
-            sendMessage(messageText)
-            messageEditText.text.clear()
-        }
+        //Create the fragments for the main activity
+        val fragmentChat = ChatFragment()
+        val fragmentUsers = UsersFragment()
 
-        messageEditText.setOnClickListener{
-            Future {
-                Thread.sleep(200)
-                futureUITask {messagesView.scrollToPosition(messages.size - 1)}
-                Thread.sleep(500)
-                futureUITask {messagesView.scrollToPosition(messages.size - 1)}
+        val fragmentPagerAdapter = MainFragmentPagerAdapter(
+                listOf(fragmentChat, fragmentUsers),
+                supportFragmentManager
+        )
+
+        chatViewPager.adapter = fragmentPagerAdapter
+
+        chatViewPager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener{
+            override fun onPageScrollStateChanged(state: Int) {}
+            override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
+            override fun onPageSelected(position: Int) {
+                chatBottomNavigation.selectedItemId = when (position) {
+                    0 -> R.id.navigation_chat_chat
+                    1 -> R.id.navigation_chat_users
+                    else -> R.id.navigation_chat_chat
+                }
             }
+        })
+
+        chatBottomNavigation.setOnNavigationItemSelectedListener {
+            when (it.itemId){
+                R.id.navigation_chat_chat -> chatViewPager.currentItem = 0
+                R.id.navigation_chat_users -> chatViewPager.currentItem = 1
+            }
+
+            true
         }
+
 
         leaveButton.setOnClickListener{
             sendMessage(":leave")
@@ -131,8 +118,6 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
             }
 
         }
-
-        fetchOldMessages()
     }
 
     override fun update(event: MessageFrom) {
@@ -140,30 +125,9 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
             is MessageFrom.PingFromServer -> {
                 futureUITask { lastPingReceivedTimestamp = System.currentTimeMillis() }
             }
-            is MessageFrom.TextMessageFromServer -> {
-                val correctServer = event.host == host && event.port == port
-                val correctRoom = event.room == room || event.room == ""
-                if (correctServer && correctRoom) {
-                    val handler = Handler(Looper.getMainLooper())
-
-                    handler.post {
-                        messages.add(event)
-                        updateMessages()
-                    }
-                }
-            }
         }
     }
 
-    fun updateMessages(){
-        val username = MainActivityState.username
-        if (messagesView.adapter == null && username != null) {
-            val adapter = MessageAdapter(this.baseContext, username)
-            messagesView.adapter = adapter
-        }
-        (messagesView.adapter as MessageAdapter).update(messages)
-        messagesView.scrollToPosition(messages.size-1)
-    }
 
     override fun onDestroy() {
         super.onDestroy()
@@ -171,9 +135,10 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
         if (observer != null) {
             unregisterObserver(observer)
         }
+        observable?.unregisterObserver(this)
     }
 
-    private fun checkConnection(){
+    fun checkConnection(){
         if (System.currentTimeMillis() > lastPingReceivedTimestamp + Constants.connectionTimeoutAfterMilliseconds){
             val color = ContextCompat.getColor(this.baseContext, R.color.colorDisconnected)
             imageConnected?.imageTintList = ColorStateList.valueOf(color)
@@ -183,17 +148,11 @@ class ChatActivity : AppCompatActivity(), Observer<MessageFrom>, Observable<Mess
         }
     }
 
-    private fun fetchOldMessages(){
-        val finalHost = host
-        val finalPort = port
-
-        if (finalHost != null && finalPort != null) {
-            val textMessages = MainActivityState.messageListProvider?.getMessages(finalHost, finalPort) ?: listOf<MessageFrom>()
-            messages.clear()
-            textMessages.filterIsInstance<MessageFrom.TextMessageFromServer>().forEach {
-                update(it)
-            }
+    fun goToChatFragment(host: String? = null, room: String? = null){
+        if (host != null && room != null){
+            setToolbarInfo(host, room)
         }
+        chatViewPager.currentItem = 0
     }
 
 

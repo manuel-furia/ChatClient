@@ -52,7 +52,6 @@ class RoomElemAdapter(private val fragment: Fragment, private val roomsUpdateCal
         val port = MainActivityState.selectedServer?.port ?: return
 
         val room = rooms[position]
-        val roomName = room.name
 
         val leaveRoom = View.OnClickListener {
             if (room.name != Constants.mainServerRoom) {
@@ -85,7 +84,7 @@ class RoomElemAdapter(private val fragment: Fragment, private val roomsUpdateCal
 
         }
 
-        textRoomElemName.text = roomName
+        textRoomElemName.text = room.name
 
 
         if (room.joined){

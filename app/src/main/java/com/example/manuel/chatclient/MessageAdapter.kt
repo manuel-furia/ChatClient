@@ -48,43 +48,17 @@ class MessageAdapter(private val context: Context, private val userName: String)
         val textUser = view.findViewById<TextView>(R.id.textUser)
         val textTime = view.findViewById<TextView>(R.id.textTime)
 
-        val format = SimpleDateFormat("HH:mm")
-        val now = Date(System.currentTimeMillis())
-        val time = format.format(now)
+        val format = SimpleDateFormat("HH:mm", Locale.US)
+        val messageTime = Date(messages[position].timestamp)
+        val timeAsString = format.format(messageTime)
 
-        textTime.text = time
+        textTime.text = timeAsString
         textMessage.text = messages[position].text
 
         if (!messages[position].serviceMessage)
             textUser.text = messages[position].user
 
     }
-
-    /*
-    fun getView(p0: Int, p1: View?, p2: ViewGroup?): View {
-        val view = p1 ?: {
-            val inflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            if (messages[p0].user == userName)
-                inflater.inflate(R.layout.message_element_me, null)
-            else
-                inflater.inflate(R.layout.message_element, null)
-            as LinearLayout
-        }()
-
-        val textMessage = view.findViewById<TextView>(R.id.textMessage)
-        val textUser = view.findViewById<TextView>(R.id.textUser)
-        val textTime = view.findViewById<TextView>(R.id.textTime)
-
-        val format = SimpleDateFormat("HH:mm", Locale.US)
-        val now = Date(System.currentTimeMillis())
-        val time = format.format(now)
-
-        textTime.text = time
-        textMessage.text = messages[p0].text
-        textUser.text = messages[p0].user
-
-        return view
-    }*/
 
     override fun getItemCount(): Int = messages.size
 

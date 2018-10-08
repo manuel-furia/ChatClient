@@ -38,7 +38,6 @@ class MainActivity : AppCompatActivity(){
         //Create the fragments for the main activity
         val fragmentServer = ServerFragment()
         val fragmentRoom = RoomFragment()
-        //val fragmentUser = UserFragment()
 
         val fragmentPagerAdapter = MainFragmentPagerAdapter(
                 listOf(fragmentServer, fragmentRoom),

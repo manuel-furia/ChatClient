@@ -2,8 +2,7 @@ package com.example.manuel.chatclient
 
 object Constants {
 
-    const val addressExtraName = "address"
-    const val portExtraName = "port"
+    const val serverConsoleName = "server"
     const val serviceMessagePrefix = ":-"
     const val serviceParsableMessagePrefix = ":="
     const val roomPrefix = "@"
@@ -17,4 +16,14 @@ object Constants {
     const val connectionTimeoutAfterMilliseconds = 3000
     const val mainServerRoom = "hall"
     const val activityResultLeftRoom = 13
+
+    val serverParsableRoomsPrefix = "Rooms:"
+    val serverParsableUsersPrefix = "Users:"
+    val serverParsableQueryPrefix = "Query:"
+    val serverParsableMessagesPrefix = "Messages:"
+    val serverParsableInfoPrefixes = listOf(serverParsableRoomsPrefix, serverParsableUsersPrefix, serverParsableQueryPrefix, serverParsableMessagesPrefix)
+    val serverParsableInfoPrefixesWoRooms = listOf(serverParsableUsersPrefix, serverParsableQueryPrefix, serverParsableMessagesPrefix)
+    val serverParsableInfoPrefixesWoUsers = listOf(serverParsableRoomsPrefix, serverParsableQueryPrefix, serverParsableMessagesPrefix)
+    val serverParsableInfoPrefixesWoQuery = listOf(serverParsableRoomsPrefix, serverParsableUsersPrefix, serverParsableMessagesPrefix)
+    val serverParsableInfoPrefixesWoMessages = listOf(serverParsableRoomsPrefix, serverParsableUsersPrefix, serverParsableQueryPrefix)
 }
