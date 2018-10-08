@@ -5,12 +5,12 @@
 
     <item
         android:id="@+id/navigation_servers"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/ic_settings_input_hdmi_black_24dp"
         android:title="Servers"/>
 
     <item
         android:id="@+id/navigation_rooms"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/ic_home_black_24dp"
         android:title="Rooms"/>
 
 

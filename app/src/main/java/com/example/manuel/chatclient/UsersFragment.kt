@@ -108,7 +108,7 @@ class UsersFragment: Fragment(), Observer<MessageFrom> {
 
 
     private fun updateUserList(){
-        users.sortBy { it.username }
+        users.sortBy { it.username.toLowerCase() }
         usersAdapter?.update(users)
         recyclerUsers?.adapter = usersAdapter
     }

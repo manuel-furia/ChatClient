@@ -135,7 +135,7 @@ class RoomFragment: Fragment(), Observer<MessageFrom> {
 
 
     private fun updateRoomList(){
-        rooms.sortBy { it.name }
+        rooms.sortBy { it.name.toLowerCase() }
         roomsAdapter?.update(rooms)
         recyclerRooms?.adapter = roomsAdapter
     }

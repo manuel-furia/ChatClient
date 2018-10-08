@@ -5,12 +5,12 @@
 
     <item
         android:id="@+id/navigation_chat_chat"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/ic_mail_outline_black_24dp"
         android:title="Chat"/>
 
     <item
         android:id="@+id/navigation_chat_users"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/ic_group_black_24dp"
         android:title="Users"/>
 
 
