@@ -2,6 +2,11 @@ package com.example.manuel.chatclient
 
 object Constants {
 
+    const val preferencesFileName = "chatclientpref"
+    const val serverListPrefName = "servers"
+    const val selectedServerPrefName = "selected"
+    const val usernamePrefName = "username"
+
     const val serverConsoleName = "server"
     const val serviceMessagePrefix = ":-"
     const val serviceParsableMessagePrefix = ":="

@@ -4,6 +4,7 @@ import android.support.v4.app.Fragment
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
+import android.text.Editable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -30,6 +31,12 @@ class ServerFragment: Fragment(){
         val editServerName: EditText? = view?.findViewById(R.id.editNewRoomName)
         val editServerPort: EditText? = view?.findViewById(R.id.editPort)
         val editUsername: EditText? = view?.findViewById(R.id.editUserName)
+
+        val username = MainActivityState.username
+
+        if (username != null){
+            editUsername?.text = Editable.Factory.getInstance().newEditable(username)
+        }
 
         buttonAddServer?.setOnClickListener {
             val host = editServerName?.text?.toString()
@@ -67,6 +74,7 @@ class ServerFragment: Fragment(){
                 Thread.sleep(1000)
             }
         }
+
     }
 
     private fun updateRecyclerView(servers: List<ServerInfo>){

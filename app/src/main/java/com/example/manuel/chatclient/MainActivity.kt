@@ -1,11 +1,9 @@
 package com.example.manuel.chatclient
 
-import android.app.ProgressDialog
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import android.media.audiofx.BassBoost
-import android.os.Binder
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.os.IBinder
@@ -30,9 +28,45 @@ class MainActivity : AppCompatActivity(){
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        val sharedPreferences = this.getSharedPreferences(Constants.preferencesFileName, Context.MODE_PRIVATE)
+        val storedSelectedServer = sharedPreferences.getString(Constants.selectedServerPrefName, "")
+        val storedServerList = sharedPreferences.getStringSet(Constants.serverListPrefName, setOf())
+        val storedUsername = sharedPreferences.getString(Constants.usernamePrefName, "")
+
+        MainActivityState.storableStateModifiedCallback = { servers, selected, username ->
+            val sharedPreferences = this.getSharedPreferences(Constants.preferencesFileName, Context.MODE_PRIVATE)
+            val editor = sharedPreferences.edit()
+            val serversAsString = servers.map {it.host + ":" + it.port}.toSet()
+            val selectedAsString = selected?.host?.plus(":")?.plus(selected.port.toString())
+            editor.putStringSet(Constants.serverListPrefName, serversAsString)
+            editor.putString(Constants.selectedServerPrefName, selectedAsString)
+            editor.putString(Constants.usernamePrefName, username)
+            editor.apply()
+        }
+
+        storedServerList.forEach {
+            val host = it.split(":").take(1)[0]
+            val port = it.split(":").drop(1)[0].toIntOrNull()
+
+            if (host != "" && port != null && port > 0) {
+                val server = ServerInfo(host, port)
+                MainActivityState.addServer(server)
+            }
+        }
+
+        if (storedSelectedServer != ""){
+            val host = storedSelectedServer.split(":").take(1)[0]
+            val port = storedSelectedServer.split(":").drop(1)[0].toIntOrNull()
+            if (host != "" && port != null && port > 0)
+                MainActivityState.selectedServer = ServerInfo(host, port)
+        }
+
+        if (storedUsername != ""){
+            MainActivityState.username = storedUsername
+        }
+
+
         val startServerHandlerIntent = Intent(this, ServerHandler::class.java)
-        //startServerHandlerIntent.putExtra(Constants.addressExtraName, Constants.testIP)
-        //startServerHandlerIntent.putExtra(Constants.portExtraName, Constants.testPort)
         startService(startServerHandlerIntent)
 
         //Create the fragments for the main activity
@@ -70,8 +104,6 @@ class MainActivity : AppCompatActivity(){
         val bindServerHandlerIntent = Intent(this, ServerHandler::class.java)
         bindService(bindServerHandlerIntent, serviceConnection, 0)
 
-        //val startChatAdapterIntent = Intent(this, ChatActivity::class.java)
-        //startActivity(startChatAdapterIntent)
     }
 
 
