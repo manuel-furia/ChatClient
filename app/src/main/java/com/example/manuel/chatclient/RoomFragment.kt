@@ -38,6 +38,7 @@ class RoomFragment: Fragment(), Observer<MessageFrom> {
             if (connected) { //If we are connected, ask for the room list
                 Future { fetchRoomsFromServer(server) }
             } else { //If we are not, start a task to connect and then get the room list
+                val username = MainActivityState.username
                 MainActivityState.connectionHandler?.createConnection(server.host, server.port)
                 Future {
                     var nowConnected = false
@@ -45,6 +46,9 @@ class RoomFragment: Fragment(), Observer<MessageFrom> {
                         nowConnected = MainActivityState.connectionHandler?.isConnected(server) ?: false
                         Thread.sleep(100)
                     }
+                    if (username != null)
+                        destination?.update(MessageTo(server.host, server.port, Constants.mainServerRoom, ":user $username"))
+
                     fetchRoomsFromServer(server)
                 }
             }
